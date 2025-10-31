@@ -1,0 +1,17 @@
+{
+  "resources": [
+    { "id": "r1", "name": "Silver Vatsel", "color": "#dc2626" },
+    { "id": "r2", "name": "Mati Keevitaja", "color": "#f97316" },
+    { "id": "r3", "name": "JCB Tõstuk #1", "color": "#16a34a" }
+  ],
+  "projects": [
+    { "id": "p1", "name": "RM2506", "color": "#2563eb" },
+    { "id": "p2", "name": "MG-EKS", "color": "#7c3aed" },
+    { "id": "p3", "name": "Uus Hoone", "color": "#f59e0b" }
+  ],
+  "assignments": [
+    { "id": "a1", "projectId": "p1", "resourceId": "r1", "start": "2025-11-03", "end": "2025-11-05", "note": "Keevitus" },
+    { "id": "a2", "projectId": "p2", "resourceId": "r1", "start": "2025-11-04", "end": "2025-11-07", "note": "Tõstuk" },
+    { "id": "a3", "projectId": "p3", "resourceId": "r1", "start": "2025-11-03", "end": "2025-11-06", "note": "Logistika" }
+  ]
+}
