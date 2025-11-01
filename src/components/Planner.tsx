@@ -32,10 +32,8 @@ export default function Planner() {
   } | null>(null);
 
   const timelineRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // ROW_HEIGHT - each resource/project gets ONE row, tasks overlay on same row
-  const ROW_HEIGHT = 80; // Taller rows to fit overlapping tasks
+  const [rowHeight, setRowHeight] = useState(80); // Adjustable row height
+  const [showAssignDialog, setShowAssignDialog] = useState<{ rowId: string; rowType: 'resource' | 'project' } | null>(null);
 
   // Generate days array
   const days = useMemo(() => {
@@ -46,47 +44,7 @@ export default function Planner() {
     return arr;
   }, [timelineStart, timelineDays]);
 
-  // Calculate critical path
-  const criticalPathIds = useMemo(() => {
-    // Simple critical path: longest dependency chain
-    const visited = new Set<string>();
-    const pathLength = new Map<string, number>();
-
-    const calculatePath = (id: string): number => {
-      if (visited.has(id)) return pathLength.get(id) || 0;
-      visited.add(id);
-
-      const assign = assignments.find(a => a.id === id);
-      if (!assign) return 0;
-
-      const duration = daysBetween(assign.start, assign.end) + 1;
-      let maxPredecessorPath = 0;
-
-      if (assign.dependencies) {
-        assign.dependencies.forEach(dep => {
-          const predPath = calculatePath(dep.from);
-          maxPredecessorPath = Math.max(maxPredecessorPath, predPath);
-        });
-      }
-
-      const totalPath = maxPredecessorPath + duration;
-      pathLength.set(id, totalPath);
-      return totalPath;
-    };
-
-    // Calculate for all assignments
-    assignments.forEach(a => calculatePath(a.id));
-
-    // Find max path length
-    const maxPath = Math.max(...Array.from(pathLength.values()));
-
-    // Return IDs on critical path (with max length)
-    return new Set(
-      Array.from(pathLength.entries())
-        .filter(([_, len]) => len === maxPath)
-        .map(([id]) => id)
-    );
-  }, [assignments]);
+  // Note: Critical path and dependency arrows removed as per requirements
 
   // Calculate resource utilization
   const resourceUtilization = useMemo(() => {
@@ -187,7 +145,7 @@ export default function Planner() {
     return blocks;
   }, [days]);
 
-  // Infinite scroll
+  // Infinite timeline scrolling - extends infinitely to past and future
   useEffect(() => {
     const handleScroll = () => {
       const el = timelineRef.current;
@@ -196,18 +154,23 @@ export default function Planner() {
       const clientWidth = el.clientWidth;
       const scrollWidth = el.scrollWidth;
 
-      if (scrollLeft < 1000) {
-        const newStart = addDays(timelineStart, -30);
+      // Extend timeline to the past (left) when scrolling backwards
+      if (scrollLeft < 3000) {
+        const daysToAdd = 180; // Add 6 months at a time
+        const newStart = addDays(timelineStart, -daysToAdd);
         setTimelineStart(newStart);
-        setTimelineDays(d => d + 30);
+        setTimelineDays(d => d + daysToAdd);
         setTimeout(() => {
-          if (el) el.scrollLeft += 30 * dayWidth;
+          if (el) el.scrollLeft += daysToAdd * dayWidth;
         }, 0);
       }
-      if (scrollWidth - scrollLeft - clientWidth < 1000) {
-        setTimelineDays(d => d + 30);
+
+      // Extend timeline to the future (right) when scrolling forwards
+      if (scrollWidth - scrollLeft - clientWidth < 3000) {
+        setTimelineDays(d => d + 180); // Add 6 months to the future
       }
     };
+
     timelineRef.current?.addEventListener('scroll', handleScroll);
     return () => timelineRef.current?.removeEventListener('scroll', handleScroll);
   }, [timelineStart, dayWidth]);
@@ -252,7 +215,6 @@ export default function Planner() {
   }, { preventDefault: true });
 
   useHotkeys('b', () => setShowBaselines(!showBaselines));
-  useHotkeys('c', () => setShowCriticalPath(!showCriticalPath));
   useHotkeys('u', () => setShowUtilization(!showUtilization));
 
   useHotkeys('1', () => setTimescale('hours'));
@@ -316,6 +278,10 @@ export default function Planner() {
     // Open edit modal (placeholder)
     console.log('Edit task:', assignId);
     alert(`Edit task: ${assignments.find(a => a.id === assignId)?.note}`);
+  };
+
+  const handleRowDoubleClick = (rowId: string, rowType: 'resource' | 'project') => {
+    setShowAssignDialog({ rowId, rowType });
   };
 
   // Drag handlers
@@ -402,76 +368,7 @@ export default function Planner() {
     };
   };
 
-  // Draw dependency arrows
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const container = canvas.parentElement;
-    if (container) {
-      canvas.width = container.scrollWidth;
-      canvas.height = container.scrollHeight;
-    }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Helper to find position
-    const getAssignmentPos = (assignId: string): { x: number; y: number; rowIdx: number } | null => {
-      let rowIdx = 0;
-      for (const row of rowItems) {
-        const assign = row.assigns.find(a => a.id === assignId);
-        if (assign) {
-          const pos = getBarPosition(assign.start, assign.end);
-          return {
-            x: pos.left + pos.width,
-            y: rowIdx * ROW_HEIGHT + ROW_HEIGHT / 2 + 20,
-            rowIdx
-          };
-        }
-        rowIdx++;
-      }
-      return null;
-    };
-
-    // Draw arrows
-    assignments.forEach(assign => {
-      if (!assign.dependencies || assign.dependencies.length === 0) return;
-
-      assign.dependencies.forEach(dep => {
-        const fromPos = getAssignmentPos(dep.from);
-        const toPos = getAssignmentPos(dep.to);
-
-        if (!fromPos || !toPos) return;
-
-        ctx.strokeStyle = '#60a5fa';
-        ctx.fillStyle = '#60a5fa';
-        ctx.lineWidth = 2;
-
-        ctx.beginPath();
-        ctx.moveTo(fromPos.x, fromPos.y);
-
-        const midX = (fromPos.x + toPos.x) / 2;
-        ctx.bezierCurveTo(
-          midX, fromPos.y,
-          midX, toPos.y,
-          toPos.x - 10, toPos.y
-        );
-        ctx.stroke();
-
-        // Arrowhead
-        const angle = Math.atan2(toPos.y - fromPos.y, toPos.x - fromPos.x);
-        const arrowSize = 8;
-        ctx.beginPath();
-        ctx.moveTo(toPos.x - arrowSize * Math.cos(angle - Math.PI / 6) - 10, toPos.y - arrowSize * Math.sin(angle - Math.PI / 6));
-        ctx.lineTo(toPos.x - 10, toPos.y);
-        ctx.lineTo(toPos.x - arrowSize * Math.cos(angle + Math.PI / 6) - 10, toPos.y - arrowSize * Math.sin(angle + Math.PI / 6));
-        ctx.fill();
-      });
-    });
-  }, [assignments, rowItems, timelineStart, dayWidth, days]);
+  // Note: Dependency arrows removed as per requirements
 
   // Today marker
   const todayOffset = useMemo(() => {
@@ -559,13 +456,6 @@ export default function Planner() {
             Baseline
           </button>
           <button
-            className={`px-2 py-1 rounded ${showCriticalPath ? 'bg-red-700' : 'bg-neutral-800'}`}
-            onClick={() => setShowCriticalPath(!showCriticalPath)}
-            title="Toggle Critical Path (C)"
-          >
-            Critical Path
-          </button>
-          <button
             className={`px-2 py-1 rounded ${showUtilization ? 'bg-purple-700' : 'bg-neutral-800'}`}
             onClick={() => setShowUtilization(!showUtilization)}
             title="Toggle Utilization (U)"
@@ -591,6 +481,7 @@ export default function Planner() {
           <button
             className="px-2 py-1 bg-neutral-800 rounded hover:bg-neutral-700"
             onClick={() => setDayWidth(Math.max(24, dayWidth - 8))}
+            title="Zoom out timeline"
           >
             -
           </button>
@@ -598,8 +489,27 @@ export default function Planner() {
           <button
             className="px-2 py-1 bg-neutral-800 rounded hover:bg-neutral-700"
             onClick={() => setDayWidth(Math.min(200, dayWidth + 8))}
+            title="Zoom in timeline"
           >
             +
+          </button>
+        </div>
+
+        <div className="border-l border-neutral-700 pl-4 flex gap-1">
+          <button
+            className="px-2 py-1 bg-neutral-800 rounded hover:bg-neutral-700"
+            onClick={() => setRowHeight(Math.max(40, rowHeight - 10))}
+            title="Decrease row height"
+          >
+            ↕-
+          </button>
+          <span className="px-2">{rowHeight}px</span>
+          <button
+            className="px-2 py-1 bg-neutral-800 rounded hover:bg-neutral-700"
+            onClick={() => setRowHeight(Math.min(150, rowHeight + 10))}
+            title="Increase row height"
+          >
+            ↕+
           </button>
         </div>
 
@@ -640,7 +550,7 @@ export default function Planner() {
             <div
               key={row.id}
               className="border-b border-neutral-800 flex items-center px-3 text-sm"
-              style={{ height: ROW_HEIGHT }}
+              style={{ height: rowHeight }}
             >
               <div className="flex-1">
                 <div className="flex items-center">
@@ -703,12 +613,6 @@ export default function Planner() {
 
             {/* Grid and rows */}
             <div className="relative">
-              <canvas
-                ref={canvasRef}
-                className="absolute inset-0 pointer-events-none"
-                style={{ zIndex: 5 }}
-              />
-
               <div className="absolute inset-0 flex pointer-events-none" style={{ zIndex: 1 }}>
                 {days.map((day, i) => {
                   const weekday = getWeekdayEtShort(day);
@@ -734,14 +638,14 @@ export default function Planner() {
               {rowItems.map((row, rowIdx) => (
                 <div
                   key={row.id}
-                  className="border-b border-neutral-800 relative"
-                  style={{ height: ROW_HEIGHT, zIndex: 10 }}
+                  className="border-b border-neutral-800 relative cursor-pointer hover:bg-neutral-800/30"
+                  style={{ height: rowHeight, zIndex: 10 }}
+                  onDoubleClick={() => handleRowDoubleClick(row.id, row.type)}
                 >
                   {/* All assignments on same row */}
                   {row.assigns.map((assign, assignIdx) => {
                     const pos = getBarPosition(assign.start, assign.end);
                     const isSelected = selectedAssignments.has(assign.id);
-                    const isCritical = showCriticalPath && criticalPathIds.has(assign.id);
                     const isHovered = hoveredTask === assign.id;
 
                     // Vertical offset for overlapping tasks
@@ -754,11 +658,11 @@ export default function Planner() {
                           className={`absolute cursor-pointer ${isSelected ? 'ring-2 ring-blue-400' : ''}`}
                           style={{
                             left: pos.left,
-                            top: ROW_HEIGHT / 2 - 10 + verticalOffset,
+                            top: rowHeight / 2 - 10 + verticalOffset,
                             width: 20,
                             height: 20,
                             transform: 'rotate(45deg)',
-                            backgroundColor: isCritical ? '#ef4444' : row.color,
+                            backgroundColor: row.color,
                             zIndex: 15
                           }}
                           onClick={(e) => handleTaskClick(e, assign.id)}
@@ -778,7 +682,7 @@ export default function Planner() {
                           left: pos.left,
                           top: 10 + verticalOffset,
                           width: pos.width,
-                          backgroundColor: isCritical ? '#ef4444' : row.color,
+                          backgroundColor: row.color,
                           opacity: isHovered ? 1 : 0.85,
                           borderLeft: `3px solid ${getStatusColor(assign.status)}`
                         }}
@@ -893,6 +797,22 @@ export default function Planner() {
         </>
       )}
 
+      {/* Assignment Dialog */}
+      {showAssignDialog && (
+        <AssignmentDialog
+          viewMode={viewMode}
+          rowId={showAssignDialog.rowId}
+          rowType={showAssignDialog.rowType}
+          resources={resources}
+          projects={projects}
+          onClose={() => setShowAssignDialog(null)}
+          onSave={(newAssignment) => {
+            setAssignments(prev => [...prev, newAssignment]);
+            setShowAssignDialog(null);
+          }}
+        />
+      )}
+
       {/* Keyboard shortcuts help */}
       <div className="absolute bottom-4 right-4 bg-neutral-950/90 border border-neutral-700 rounded-lg p-3 text-[10px] text-neutral-400 max-w-xs">
         <div className="font-bold text-neutral-200 mb-2">Klaviatuuri otseteed:</div>
@@ -901,12 +821,135 @@ export default function Planner() {
           <div>Ctrl+A</div><div>Vali kõik</div>
           <div>Ctrl+D</div><div>Dubleeri</div>
           <div>Ctrl+Z/Y</div><div>Undo/Redo</div>
-          <div>B/C/U</div><div>Toggle views</div>
+          <div>B/U</div><div>Toggle views</div>
           <div>1/2/3/4</div><div>Timescale</div>
           <div>/</div><div>Search</div>
           <div>Esc</div><div>Cancel</div>
+          <div>Double-click row</div><div>Lisa ülesanne</div>
         </div>
       </div>
     </div>
+  );
+}
+
+// Assignment Dialog Component
+function AssignmentDialog({
+  viewMode,
+  rowId,
+  rowType,
+  resources,
+  projects,
+  onClose,
+  onSave
+}: {
+  viewMode: 'resources' | 'projects';
+  rowId: string;
+  rowType: 'resource' | 'project';
+  resources: any[];
+  projects: any[];
+  onClose: () => void;
+  onSave: (assignment: any) => void;
+}) {
+  const [selectedId, setSelectedId] = useState('');
+  const [note, setNote] = useState('');
+  const today = new Date();
+  const [startDate, setStartDate] = useState(toISODate(today));
+  const endDateInit = new Date(today);
+  endDateInit.setDate(endDateInit.getDate() + 3);
+  const [endDate, setEndDate] = useState(toISODate(endDateInit));
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const newAssignment = {
+      id: `a${Date.now()}`,
+      resourceId: viewMode === 'resources' ? rowId : selectedId,
+      projectId: viewMode === 'projects' ? rowId : selectedId,
+      start: startDate,
+      end: endDate,
+      note: note || 'Uus ülesanne',
+      progress: 0,
+      status: 'not-started' as const
+    };
+
+    onSave(newAssignment);
+  };
+
+  const selectOptions = viewMode === 'resources' ? projects : resources;
+  const selectLabel = viewMode === 'resources' ? 'Projekt' : 'Ressurss';
+
+  return (
+    <>
+      <div onClick={onClose} className="fixed inset-0 bg-black/50 z-40" />
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-neutral-800 border border-neutral-600 rounded-lg shadow-xl p-6 z-50 w-96">
+        <h2 className="text-xl font-bold text-white mb-4">Lisa uus ülesanne</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm text-neutral-300 mb-1">{selectLabel}</label>
+            <select
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              required
+              className="w-full bg-neutral-700 text-white px-3 py-2 rounded outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Vali {selectLabel.toLowerCase()}...</option>
+              {selectOptions.map(item => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm text-neutral-300 mb-1">Kommentaar / Kirjeldus</label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Lisa kommentaar või lisainfo..."
+              className="w-full bg-neutral-700 text-white px-3 py-2 rounded outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={3}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-neutral-300 mb-1">Alguskuupäev</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+                className="w-full bg-neutral-700 text-white px-3 py-2 rounded outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-neutral-300 mb-1">Lõppkuupäev</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+                className="w-full bg-neutral-700 text-white px-3 py-2 rounded outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded"
+            >
+              Tühista
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium"
+            >
+              Lisa ülesanne
+            </button>
+          </div>
+        </form>
+      </div>
+    </>
   );
 }
