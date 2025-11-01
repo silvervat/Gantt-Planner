@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/Gantt-Planner/static/css/main.eb2701d1.css",
+    "main.js": "/Gantt-Planner/static/js/main.0f3ff9d5.js",
+    "static/js/239.7fc088b7.chunk.js": "/Gantt-Planner/static/js/239.7fc088b7.chunk.js",
+    "index.html": "/Gantt-Planner/index.html",
+    "main.eb2701d1.css.map": "/Gantt-Planner/static/css/main.eb2701d1.css.map",
+    "main.0f3ff9d5.js.map": "/Gantt-Planner/static/js/main.0f3ff9d5.js.map",
+    "239.7fc088b7.chunk.js.map": "/Gantt-Planner/static/js/239.7fc088b7.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.eb2701d1.css",
+    "static/js/main.0f3ff9d5.js"
+  ]
+}
