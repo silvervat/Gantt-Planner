@@ -109,52 +109,55 @@ export default function Planner() {
     }
   }, [viewMode, resources, projects, filteredAssignments]);
 
-  // Calculate dynamic row heights based on overlapping tasks
-  const rowHeights = useMemo(() => {
+  // Calculate dynamic row heights and task layers
+  const { rowHeights, taskLayers, rowMaxOverlaps } = useMemo(() => {
     const heights = new Map<string, number>();
+    const layers = new Map<string, number>();
+    const maxOverlaps = new Map<string, number>();
 
     rowItems.forEach(row => {
       if (row.assigns.length === 0) {
         heights.set(row.id, rowHeight);
+        maxOverlaps.set(row.id, 1);
         return;
       }
 
-      // Find maximum number of overlapping tasks at any point in time
-      const events: { date: string; type: 'start' | 'end'; assignId: string }[] = [];
+      // Sort assignments by start date
+      const sortedAssigns = [...row.assigns].sort((a, b) => a.start.localeCompare(b.start));
 
-      row.assigns.forEach(assign => {
-        events.push({ date: assign.start, type: 'start', assignId: assign.id });
-        events.push({ date: assign.end, type: 'end', assignId: assign.id });
-      });
-
-      // Sort by date, end events before start events on same date
-      events.sort((a, b) => {
-        const dateCmp = a.date.localeCompare(b.date);
-        if (dateCmp !== 0) return dateCmp;
-        return a.type === 'end' ? -1 : 1;
-      });
-
-      let currentOverlap = 0;
-      let maxOverlap = 0;
-
-      events.forEach(event => {
-        if (event.type === 'start') {
-          currentOverlap++;
-          maxOverlap = Math.max(maxOverlap, currentOverlap);
-        } else {
-          currentOverlap--;
+      // Assign layers using greedy algorithm
+      const assignedLayers: number[] = [];
+      sortedAssigns.forEach(assign => {
+        let layer = 0;
+        // Find first available layer where this task doesn't overlap with existing tasks
+        while (true) {
+          const overlapsInLayer = sortedAssigns.filter((other, idx) => {
+            if (other.id === assign.id) return false;
+            if (assignedLayers[idx] !== layer) return false;
+            // Check if they overlap in time
+            return !(assign.end < other.start || assign.start > other.end);
+          });
+          if (overlapsInLayer.length === 0) break;
+          layer++;
         }
+        const idx = row.assigns.findIndex(a => a.id === assign.id);
+        assignedLayers[idx] = layer;
+        layers.set(assign.id, layer);
       });
+
+      const maxLayer = Math.max(...assignedLayers, 0);
+      const maxOverlap = maxLayer + 1;
+      maxOverlaps.set(row.id, maxOverlap);
 
       // Calculate height: base height + extra space for overlapping tasks
       const minHeight = 60;
-      const taskSpacing = 20; // Space per overlapping task
-      const calculatedHeight = Math.max(minHeight, maxOverlap * taskSpacing + 30);
+      const taskHeight = 24; // Height per task layer
+      const calculatedHeight = Math.max(minHeight, maxOverlap * taskHeight + 20);
 
       heights.set(row.id, calculatedHeight);
     });
 
-    return heights;
+    return { rowHeights: heights, taskLayers: layers, rowMaxOverlaps: maxOverlaps };
   }, [rowItems, rowHeight]);
 
   // Month/week blocks
@@ -701,8 +704,13 @@ export default function Planner() {
                     const isSelected = selectedAssignments.has(assign.id);
                     const isHovered = hoveredTask === assign.id;
 
-                    // Vertical offset for overlapping tasks
-                    const verticalOffset = (assignIdx % 4) * 18; // Stack up to 4 tasks
+                    // Calculate vertical position based on layer
+                    const layer = taskLayers.get(assign.id) || 0;
+                    const maxOverlap = rowMaxOverlaps.get(row.id) || 1;
+                    const availableHeight = currentRowHeight - 20; // Leave padding
+                    const taskHeightPx = availableHeight / maxOverlap;
+                    const verticalOffset = layer * taskHeightPx + 10; // Start 10px from top
+                    const actualTaskHeight = Math.max(20, taskHeightPx - 4); // Min 20px, leave 4px gap
 
                     if (assign.milestone) {
                       return (
@@ -711,7 +719,7 @@ export default function Planner() {
                           className={`absolute cursor-pointer ${isSelected ? 'ring-2 ring-blue-400' : ''}`}
                           style={{
                             left: pos.left,
-                            top: rowHeight / 2 - 10 + verticalOffset,
+                            top: currentRowHeight / 2 - 10,
                             width: 20,
                             height: 20,
                             transform: 'rotate(45deg)',
@@ -730,11 +738,12 @@ export default function Planner() {
                     return (
                       <div
                         key={assign.id}
-                        className={`absolute h-8 rounded cursor-move transition-all ${isSelected ? 'ring-2 ring-blue-400 z-10' : 'z-0'}`}
+                        className={`absolute rounded cursor-move transition-all ${isSelected ? 'ring-2 ring-blue-400 z-10' : 'z-0'}`}
                         style={{
                           left: pos.left,
-                          top: 10 + verticalOffset,
+                          top: verticalOffset,
                           width: pos.width,
+                          height: actualTaskHeight,
                           backgroundColor: row.color,
                           opacity: isHovered ? 1 : 0.85,
                           borderLeft: `3px solid ${getStatusColor(assign.status)}`
