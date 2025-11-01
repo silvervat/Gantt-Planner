@@ -14,6 +14,8 @@ interface DataContextType {
   setViewMode: (mode: 'resources' | 'projects') => void;
   addAssignment: (assign: Assignment) => void;
   setAssignments: Dispatch<SetStateAction<Assignment[]>>;
+  setResources: Dispatch<SetStateAction<Resource[]>>;
+  setProjects: Dispatch<SetStateAction<Project[]>>;
 }
 
 export const DataContext = createContext<DataContextType | null>(null);
@@ -49,7 +51,7 @@ export default function App() {
   };
 
   return (
-    <DataContext.Provider value={{ resources, projects, assignments, viewMode, setViewMode, addAssignment, setAssignments }}>
+    <DataContext.Provider value={{ resources, projects, assignments, viewMode, setViewMode, addAssignment, setAssignments, setResources, setProjects }}>
       <Router>
         <nav className="bg-neutral-800 p-2 flex gap-4">
           <Link to="/" className="text-blue-400">Timeline</Link>
