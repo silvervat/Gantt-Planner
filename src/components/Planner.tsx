@@ -109,6 +109,54 @@ export default function Planner() {
     }
   }, [viewMode, resources, projects, filteredAssignments]);
 
+  // Calculate dynamic row heights based on overlapping tasks
+  const rowHeights = useMemo(() => {
+    const heights = new Map<string, number>();
+
+    rowItems.forEach(row => {
+      if (row.assigns.length === 0) {
+        heights.set(row.id, rowHeight);
+        return;
+      }
+
+      // Find maximum number of overlapping tasks at any point in time
+      const events: { date: string; type: 'start' | 'end'; assignId: string }[] = [];
+
+      row.assigns.forEach(assign => {
+        events.push({ date: assign.start, type: 'start', assignId: assign.id });
+        events.push({ date: assign.end, type: 'end', assignId: assign.id });
+      });
+
+      // Sort by date, end events before start events on same date
+      events.sort((a, b) => {
+        const dateCmp = a.date.localeCompare(b.date);
+        if (dateCmp !== 0) return dateCmp;
+        return a.type === 'end' ? -1 : 1;
+      });
+
+      let currentOverlap = 0;
+      let maxOverlap = 0;
+
+      events.forEach(event => {
+        if (event.type === 'start') {
+          currentOverlap++;
+          maxOverlap = Math.max(maxOverlap, currentOverlap);
+        } else {
+          currentOverlap--;
+        }
+      });
+
+      // Calculate height: base height + extra space for overlapping tasks
+      const minHeight = 60;
+      const taskSpacing = 20; // Space per overlapping task
+      const calculatedHeight = Math.max(minHeight, maxOverlap * taskSpacing + 30);
+
+      heights.set(row.id, calculatedHeight);
+    });
+
+    return heights;
+  }, [rowItems, rowHeight]);
+
   // Month/week blocks
   const monthBlocks = useMemo(() => {
     const blocks: { label: string; count: number }[] = [];
@@ -546,11 +594,13 @@ export default function Planner() {
           <div className="h-20 border-b border-neutral-700 flex items-center justify-center text-xs font-bold text-neutral-400">
             {viewMode === 'resources' ? 'RESSURSID' : 'PROJEKTID'}
           </div>
-          {rowItems.map(row => (
+          {rowItems.map(row => {
+            const currentRowHeight = rowHeights.get(row.id) || rowHeight;
+            return (
             <div
               key={row.id}
               className="border-b border-neutral-800 flex items-center px-3 text-sm"
-              style={{ height: rowHeight }}
+              style={{ height: currentRowHeight }}
             >
               <div className="flex-1">
                 <div className="flex items-center">
@@ -570,7 +620,8 @@ export default function Planner() {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Timeline area */}
@@ -635,11 +686,13 @@ export default function Planner() {
               )}
 
               {/* Rows - ONE row per resource/project, tasks overlay */}
-              {rowItems.map((row, rowIdx) => (
+              {rowItems.map((row, rowIdx) => {
+                const currentRowHeight = rowHeights.get(row.id) || rowHeight;
+                return (
                 <div
                   key={row.id}
                   className="border-b border-neutral-800 relative cursor-pointer hover:bg-neutral-800/30"
-                  style={{ height: rowHeight, zIndex: 10 }}
+                  style={{ height: currentRowHeight, zIndex: 10 }}
                   onDoubleClick={() => handleRowDoubleClick(row.id, row.type)}
                 >
                   {/* All assignments on same row */}
@@ -747,7 +800,8 @@ export default function Planner() {
                     );
                   })}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
