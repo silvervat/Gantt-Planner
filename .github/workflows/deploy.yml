@@ -5,6 +5,9 @@ on:
     branches: [ claude/review-gantt-plan-011CUhcBJxTV8QYJgshrzYNK ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
