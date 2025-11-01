@@ -6,7 +6,7 @@ import Toolbar from './Toolbar';
 import { addDays, daysBetween, getMonthLabelEt, getIsoWeek, getWeekdayEtShort, sameMonthYear, toISODate } from '../utils/dateUtils';
 import { Assignment, Dependency } from '../types';
 
-type TimescaleType = 'hours' | 'days' | 'weeks' | 'months';
+type TimescaleType = 'days' | 'weeks' | 'months';
 
 export default function Planner() {
   const { assignments, setAssignments, resources, projects, viewMode, setViewMode } = useDataContext();
@@ -268,10 +268,18 @@ export default function Planner() {
   useHotkeys('b', () => setShowBaselines(!showBaselines));
   useHotkeys('u', () => setShowUtilization(!showUtilization));
 
-  useHotkeys('1', () => setTimescale('hours'));
-  useHotkeys('2', () => setTimescale('days'));
-  useHotkeys('3', () => setTimescale('weeks'));
-  useHotkeys('4', () => setTimescale('months'));
+  useHotkeys('d', () => {
+    setTimescale('days');
+    setDayWidth(96); // Default day width
+  });
+  useHotkeys('w', () => {
+    setTimescale('weeks');
+    setDayWidth(20); // Week view: 20px per day = 140px per week
+  });
+  useHotkeys('m', () => {
+    setTimescale('months');
+    setDayWidth(5); // Month view: 5px per day = 150px per month
+  });
 
   useHotkeys('/', () => {
     document.getElementById('search-input')?.focus();
@@ -516,16 +524,27 @@ export default function Planner() {
         </div>
 
         <div className="border-l border-neutral-700 pl-4 flex gap-1">
-          {(['hours', 'days', 'weeks', 'months'] as TimescaleType[]).map((scale, idx) => (
-            <button
-              key={scale}
-              className={`px-2 py-1 rounded text-[10px] ${timescale === scale ? 'bg-blue-600' : 'bg-neutral-800'}`}
-              onClick={() => setTimescale(scale)}
-              title={`Switch to ${scale} (${idx + 1})`}
-            >
-              {scale[0].toUpperCase()}
-            </button>
-          ))}
+          <button
+            className={`px-3 py-1 rounded text-xs font-medium ${timescale === 'days' ? 'bg-blue-600' : 'bg-neutral-800'}`}
+            onClick={() => { setTimescale('days'); setDayWidth(96); }}
+            title="Päeva vaade (D) - 96px/päev"
+          >
+            D
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-xs font-medium ${timescale === 'weeks' ? 'bg-blue-600' : 'bg-neutral-800'}`}
+            onClick={() => { setTimescale('weeks'); setDayWidth(20); }}
+            title="Nädala vaade (W) - 20px/päev"
+          >
+            W
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-xs font-medium ${timescale === 'months' ? 'bg-blue-600' : 'bg-neutral-800'}`}
+            onClick={() => { setTimescale('months'); setDayWidth(5); }}
+            title="Kuu vaade (M) - 5px/päev"
+          >
+            M
+          </button>
         </div>
 
         <div className="border-l border-neutral-700 pl-4 flex gap-1">
@@ -885,7 +904,7 @@ export default function Planner() {
           <div>Ctrl+D</div><div>Dubleeri</div>
           <div>Ctrl+Z/Y</div><div>Undo/Redo</div>
           <div>B/U</div><div>Toggle views</div>
-          <div>1/2/3/4</div><div>Timescale</div>
+          <div>D/W/M</div><div>Day/Week/Month</div>
           <div>/</div><div>Search</div>
           <div>Esc</div><div>Cancel</div>
           <div>Double-click row</div><div>Lisa ülesanne</div>
