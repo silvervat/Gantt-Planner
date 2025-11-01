@@ -32,9 +32,9 @@ export default function App() {
 
   useEffect(() => {
     loadData().then(data => {
-      setResources(data.resources);
-      setProjects(data.projects);
-      setAssignments(data.assignments);
+      setResources(data.resources as any);
+      setProjects(data.projects as any);
+      setAssignments(data.assignments as any);
     }).catch(console.error);
   }, []);
 
