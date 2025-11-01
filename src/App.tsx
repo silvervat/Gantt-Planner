@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, Dispatch, SetStateAction } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Planner from './components/Planner';
 import ResourceTable from './components/ResourceTable';
@@ -13,7 +13,7 @@ interface DataContextType {
   viewMode: 'resources' | 'projects';
   setViewMode: (mode: 'resources' | 'projects') => void;
   addAssignment: (assign: Assignment) => void;
-  setAssignments: (assigns: Assignment[]) => void;
+  setAssignments: Dispatch<SetStateAction<Assignment[]>>;
 }
 
 export const DataContext = createContext<DataContextType | null>(null);

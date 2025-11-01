@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useDataContext } from '../App';
 
 export default function ProjectTable() {
-  const { projects, assignments, addAssignment } = useDataContext();
+  const { projects, assignments, resources, addAssignment } = useDataContext();
   const [filter, setFilter] = useState('');
   const [sortBy, setSortBy] = useState('name');
 

@@ -5,7 +5,7 @@ export async function loadData() {
 }
 
 export async function saveData(data: any) {
-  const token = import.meta.env.VITE_GITHUB_TOKEN;
+  const token = process.env.REACT_APP_GITHUB_TOKEN;
   if (!token) throw new Error('GitHub token puudu');
   const current = await loadData();
   await fetch('https://api.github.com/repos/SINUKASUTAJA/gantt-planner/contents/src/data/data.json', {

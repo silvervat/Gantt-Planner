@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useDataContext } from '../App'; // Context import
 
 export default function ResourceTable() {
-  const { resources, assignments, addAssignment } = useDataContext();
+  const { resources, assignments, projects, addAssignment } = useDataContext();
   const [filter, setFilter] = useState('');
   const [sortBy, setSortBy] = useState('name');
 
