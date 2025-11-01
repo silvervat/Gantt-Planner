@@ -1,23 +1,31 @@
+import initialData from '../data/data.json';
+
+const STORAGE_KEY = 'gantt-planner-data';
+
 export async function loadData() {
-  const response = await fetch('https://api.github.com/repos/SINUKASUTAJA/gantt-planner/contents/src/data/data.json?ref=main');
-  const data = await response.json();
-  return JSON.parse(atob(data.content));
+  try {
+    // Try to load from localStorage first
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      console.log('Loaded data from localStorage');
+      return Promise.resolve(parsed);
+    }
+  } catch (error) {
+    console.error('Error loading from localStorage:', error);
+  }
+
+  // Fall back to initial data
+  console.log('Using initial data');
+  return Promise.resolve(initialData);
 }
 
 export async function saveData(data: any) {
-  const token = import.meta.env.VITE_GITHUB_TOKEN;
-  if (!token) throw new Error('GitHub token puudu');
-  const current = await loadData();
-  await fetch('https://api.github.com/repos/SINUKASUTAJA/gantt-planner/contents/src/data/data.json', {
-    method: 'PUT',
-    headers: {
-      'Authorization': `token ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      message: 'Update planner data',
-      content: btoa(JSON.stringify(data, null, 2)),
-      sha: current.sha,
-    }),
-  });
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    console.log('Data saved to localStorage');
+  } catch (error) {
+    console.error('Error saving to localStorage:', error);
+  }
+  return Promise.resolve();
 }

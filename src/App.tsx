@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext, Dispatch, SetStateAction } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Planner from './components/Planner';
 import ResourceTable from './components/ResourceTable';
@@ -13,7 +13,9 @@ interface DataContextType {
   viewMode: 'resources' | 'projects';
   setViewMode: (mode: 'resources' | 'projects') => void;
   addAssignment: (assign: Assignment) => void;
-  setAssignments: (assigns: Assignment[]) => void;
+  setAssignments: Dispatch<SetStateAction<Assignment[]>>;
+  setResources: Dispatch<SetStateAction<Resource[]>>;
+  setProjects: Dispatch<SetStateAction<Project[]>>;
 }
 
 export const DataContext = createContext<DataContextType | null>(null);
@@ -32,9 +34,9 @@ export default function App() {
 
   useEffect(() => {
     loadData().then(data => {
-      setResources(data.resources);
-      setProjects(data.projects);
-      setAssignments(data.assignments);
+      setResources(data.resources as any);
+      setProjects(data.projects as any);
+      setAssignments(data.assignments as any);
     }).catch(console.error);
   }, []);
 
@@ -49,7 +51,7 @@ export default function App() {
   };
 
   return (
-    <DataContext.Provider value={{ resources, projects, assignments, viewMode, setViewMode, addAssignment, setAssignments }}>
+    <DataContext.Provider value={{ resources, projects, assignments, viewMode, setViewMode, addAssignment, setAssignments, setResources, setProjects }}>
       <Router>
         <nav className="bg-neutral-800 p-2 flex gap-4">
           <Link to="/" className="text-blue-400">Timeline</Link>

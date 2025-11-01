@@ -1,17 +1,301 @@
 {
   "resources": [
-    { "id": "r1", "name": "Silver Vatsel", "color": "#dc2626" },
-    { "id": "r2", "name": "Mati Keevitaja", "color": "#f97316" },
-    { "id": "r3", "name": "JCB Tõstuk #1", "color": "#16a34a" }
+    {
+      "id": "r1",
+      "name": "Silver Vatsel",
+      "color": "#dc2626",
+      "department": "Keevitus",
+      "skills": ["Keevitus", "Montaaž"],
+      "availability": 100
+    },
+    {
+      "id": "r2",
+      "name": "Mati Keevitaja",
+      "color": "#f97316",
+      "department": "Keevitus",
+      "skills": ["Keevitus", "Lõikamine"],
+      "availability": 100
+    },
+    {
+      "id": "r3",
+      "name": "JCB Tõstuk #1",
+      "color": "#16a34a",
+      "department": "Tehnika",
+      "skills": ["Transport", "Tõstmine"],
+      "availability": 100
+    },
+    {
+      "id": "r4",
+      "name": "Peeter Insener",
+      "color": "#3b82f6",
+      "department": "Projektijuhtimine",
+      "skills": ["Projekteerimine", "Juhtimine"],
+      "availability": 80
+    },
+    {
+      "id": "r5",
+      "name": "Kati Kvaliteet",
+      "color": "#8b5cf6",
+      "department": "Kvaliteedikontroll",
+      "skills": ["Kontroll", "Dokumentatsioon"],
+      "availability": 100
+    }
   ],
   "projects": [
-    { "id": "p1", "name": "RM2506", "color": "#2563eb" },
-    { "id": "p2", "name": "MG-EKS", "color": "#7c3aed" },
-    { "id": "p3", "name": "Uus Hoone", "color": "#f59e0b" }
+    {
+      "id": "p1",
+      "name": "RM2506 - Metallkonstruktsioonid",
+      "color": "#2563eb",
+      "status": "active",
+      "priority": "high"
+    },
+    {
+      "id": "p2",
+      "name": "MG-EKS - Ekskavaatori remont",
+      "color": "#7c3aed",
+      "status": "active",
+      "priority": "critical"
+    },
+    {
+      "id": "p3",
+      "name": "Uus Hoone - Teraskonstr.",
+      "color": "#f59e0b",
+      "status": "active",
+      "priority": "medium"
+    },
+    {
+      "id": "p4",
+      "name": "Sillaehitus Tartu-Tallinn",
+      "color": "#10b981",
+      "status": "active",
+      "priority": "high"
+    }
   ],
   "assignments": [
-    { "id": "a1", "projectId": "p1", "resourceId": "r1", "start": "2025-11-03", "end": "2025-11-05", "note": "Keevitus" },
-    { "id": "a2", "projectId": "p2", "resourceId": "r1", "start": "2025-11-04", "end": "2025-11-07", "note": "Tõstuk" },
-    { "id": "a3", "projectId": "p3", "resourceId": "r1", "start": "2025-11-03", "end": "2025-11-06", "note": "Logistika" }
+    {
+      "id": "a1",
+      "projectId": "p1",
+      "resourceId": "r4",
+      "start": "2025-11-01",
+      "end": "2025-11-02",
+      "note": "Projekti planeerimine",
+      "progress": 100,
+      "status": "completed",
+      "priority": "high",
+      "tags": ["planeerimine", "algfaas"]
+    },
+    {
+      "id": "a2",
+      "projectId": "p1",
+      "resourceId": "r1",
+      "start": "2025-11-03",
+      "end": "2025-11-05",
+      "note": "Keevitustööd - Fase 1",
+      "progress": 65,
+      "parent": null,
+      "status": "in-progress",
+      "priority": "high",
+      "dependencies": [
+        { "from": "a1", "to": "a2", "type": "FS" }
+      ],
+      "tags": ["keevitus"]
+    },
+    {
+      "id": "a3",
+      "projectId": "p1",
+      "resourceId": "r1",
+      "start": "2025-11-04",
+      "end": "2025-11-06",
+      "note": "Detailide valmistamine",
+      "progress": 40,
+      "parent": "a2",
+      "status": "in-progress",
+      "priority": "medium"
+    },
+    {
+      "id": "a4",
+      "projectId": "p1",
+      "resourceId": "r2",
+      "start": "2025-11-06",
+      "end": "2025-11-08",
+      "note": "Keevitustööd - Fase 2",
+      "progress": 0,
+      "status": "not-started",
+      "priority": "high",
+      "dependencies": [
+        { "from": "a2", "to": "a4", "type": "FS", "lag": 0 }
+      ],
+      "tags": ["keevitus"]
+    },
+    {
+      "id": "a5",
+      "projectId": "p1",
+      "resourceId": "r5",
+      "start": "2025-11-08",
+      "end": "2025-11-08",
+      "note": "Kvaliteedikontroll",
+      "milestone": true,
+      "progress": 0,
+      "status": "not-started",
+      "priority": "critical",
+      "dependencies": [
+        { "from": "a4", "to": "a5", "type": "FS" }
+      ],
+      "tags": ["milestone", "kvaliteet"]
+    },
+    {
+      "id": "a6",
+      "projectId": "p2",
+      "resourceId": "r3",
+      "start": "2025-11-02",
+      "end": "2025-11-04",
+      "note": "Ekskavaatori transport",
+      "progress": 100,
+      "status": "completed",
+      "priority": "critical",
+      "tags": ["transport"]
+    },
+    {
+      "id": "a7",
+      "projectId": "p2",
+      "resourceId": "r2",
+      "start": "2025-11-04",
+      "end": "2025-11-07",
+      "note": "Põhiremondid",
+      "progress": 50,
+      "parent": null,
+      "status": "in-progress",
+      "priority": "critical",
+      "dependencies": [
+        { "from": "a6", "to": "a7", "type": "FS" }
+      ],
+      "tags": ["remont"]
+    },
+    {
+      "id": "a8",
+      "projectId": "p2",
+      "resourceId": "r2",
+      "start": "2025-11-05",
+      "end": "2025-11-06",
+      "note": "Hüdraulika parandus",
+      "progress": 60,
+      "parent": "a7",
+      "status": "in-progress",
+      "priority": "high"
+    },
+    {
+      "id": "a9",
+      "projectId": "p2",
+      "resourceId": "r5",
+      "start": "2025-11-07",
+      "end": "2025-11-07",
+      "note": "Testimine ja ülevaatus",
+      "milestone": true,
+      "progress": 0,
+      "status": "not-started",
+      "priority": "critical",
+      "dependencies": [
+        { "from": "a7", "to": "a9", "type": "FS" }
+      ],
+      "tags": ["milestone", "test"]
+    },
+    {
+      "id": "a10",
+      "projectId": "p3",
+      "resourceId": "r1",
+      "start": "2025-11-03",
+      "end": "2025-11-06",
+      "note": "Terastalastiku montaaž",
+      "progress": 30,
+      "status": "in-progress",
+      "priority": "medium",
+      "tags": ["montaaž"]
+    },
+    {
+      "id": "a11",
+      "projectId": "p3",
+      "resourceId": "r3",
+      "start": "2025-11-05",
+      "end": "2025-11-07",
+      "note": "Raskete elementide tõstmine",
+      "progress": 20,
+      "status": "in-progress",
+      "priority": "high",
+      "dependencies": [
+        { "from": "a10", "to": "a11", "type": "SS", "lag": 2 }
+      ],
+      "tags": ["tõstmine"]
+    },
+    {
+      "id": "a12",
+      "projectId": "p4",
+      "resourceId": "r4",
+      "start": "2025-11-08",
+      "end": "2025-11-10",
+      "note": "Silla projekteerimise järelevaatus",
+      "progress": 0,
+      "status": "not-started",
+      "priority": "high",
+      "tags": ["projekteerimine"]
+    },
+    {
+      "id": "a13",
+      "projectId": "p4",
+      "resourceId": "r1",
+      "start": "2025-11-10",
+      "end": "2025-11-14",
+      "note": "Metallkonstruktsioonid",
+      "progress": 0,
+      "parent": null,
+      "status": "not-started",
+      "priority": "high",
+      "dependencies": [
+        { "from": "a12", "to": "a13", "type": "FS" }
+      ],
+      "tags": ["keevitus", "sild"]
+    },
+    {
+      "id": "a14",
+      "projectId": "p4",
+      "resourceId": "r1",
+      "start": "2025-11-10",
+      "end": "2025-11-12",
+      "note": "Tugitala keevitus",
+      "progress": 0,
+      "parent": "a13",
+      "status": "not-started",
+      "priority": "high"
+    },
+    {
+      "id": "a15",
+      "projectId": "p4",
+      "resourceId": "r3",
+      "start": "2025-11-14",
+      "end": "2025-11-15",
+      "note": "Paigaldamine",
+      "progress": 0,
+      "status": "not-started",
+      "priority": "critical",
+      "dependencies": [
+        { "from": "a13", "to": "a15", "type": "FS" }
+      ],
+      "tags": ["montaaž", "tõstmine"]
+    },
+    {
+      "id": "a16",
+      "projectId": "p4",
+      "resourceId": "r5",
+      "start": "2025-11-15",
+      "end": "2025-11-15",
+      "note": "Projekti lõpetamine",
+      "milestone": true,
+      "progress": 0,
+      "status": "not-started",
+      "priority": "critical",
+      "dependencies": [
+        { "from": "a15", "to": "a16", "type": "FS" }
+      ],
+      "tags": ["milestone"]
+    }
   ]
 }
