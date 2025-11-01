@@ -2,7 +2,7 @@
   "name": "gantt-planner",
   "version": "1.0.0",
   "private": true,
-  "homepage": "https://SINUKASUTAJA.github.io/gantt-planner",
+  "homepage": "https://silvervat.github.io/gantt-planner",
   "dependencies": {
     "chart.js": "^4.4.0",
     "file-saver": "^2.0.5",
