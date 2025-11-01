@@ -1,23 +1,13 @@
+import initialData from '../data/data.json';
+
 export async function loadData() {
-  const response = await fetch('https://api.github.com/repos/silvervat/Gantt-Planner/contents/src/data/data.json?ref=main');
-  const data = await response.json();
-  return JSON.parse(atob(data.content));
+  // Return data from local file instead of GitHub API
+  return Promise.resolve(initialData);
 }
 
 export async function saveData(data: any) {
-  const token = process.env.REACT_APP_GITHUB_TOKEN;
-  if (!token) throw new Error('GitHub token puudu');
-  const current = await loadData();
-  await fetch('https://api.github.com/repos/silvervat/Gantt-Planner/contents/src/data/data.json', {
-    method: 'PUT',
-    headers: {
-      'Authorization': `token ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      message: 'Update planner data',
-      content: btoa(JSON.stringify(data, null, 2)),
-      sha: current.sha,
-    }),
-  });
+  // For now, just log - we can't save back to the file in production
+  // This would need a backend API to work properly
+  console.log('Save data (not persisted):', data);
+  return Promise.resolve();
 }
